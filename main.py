@@ -137,7 +137,7 @@ def main():
     # setup OBD-II connection
     obd_connection = obd.OBD()
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(4)
 
     while cap.isOpened():
         # Read frame from the video
