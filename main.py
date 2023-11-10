@@ -198,6 +198,17 @@ def main():
 
     # Release the video capture object and close the display window
     cap.release()
+    exit_text = "End of Application"
+    cv2.putText(
+        frame,
+        exit_text,
+        (150, 100),
+        cv2.FONT_HERSHEY_COMPLEX_SMALL,
+        0.8,
+        (0, 0, 255),
+        2,
+    )
+    time.sleep(5)
     cv2.destroyAllWindows()
 
 
