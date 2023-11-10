@@ -58,8 +58,8 @@ def is_vehicle_moving(obd_connection):
     if not response.is_null():
         speed = response.value.magnitude
         if speed > 0:
-            return True
-    return False
+            return True, speed
+    return False, 0
 
 
 # Function to check if vehicle is powering off
@@ -117,10 +117,6 @@ def process_frame(results):
 
                     last_seen_times[class_label] = current_time
 
-                    print("durations: ")
-                    print(durations)
-                    print(last_seen_times)
-
                 for class_name in last_seen_times:
                     if current_time - last_seen_times[class_name] > 1:
                         # Calculate the duration and write into the log file
@@ -139,47 +135,70 @@ def process_frame(results):
 # Main Python application logic
 def main():
     # setup OBD-II connection
-    # obd_connection = obd.OBD()
+    obd_connection = obd.OBD()
 
-    video_path = "./resource/video_dataset/gA_1_s1_ir_face.mp4"
+    # video_path = "./resource/video_dataset/gA_1_s1_ir_face.mp4"
     # Video capture setup
-    cap = cv2.VideoCapture(video_path)
+    # cap = cv2.VideoCapture(video_path)
+
+    cap = cv2.VideoCapture(0)
 
     while cap.isOpened():
         # Read frame from the video
         success, frame = cap.read()
 
-        if success:
-            # Process the frame and set a confidence threshold of 50%
-            results = model(frame, conf=0.5)
-            annotated_frame = process_frame(results)
+        # fetch vehicle moving status and speed
+        vehicle_status, vehicle_speed = is_vehicle_moving(obd_connection)
 
-            # Display the annotated frame
-            cv2.imshow("Driver Attention Monitoring", annotated_frame)
+        if vehicle_status:
+            if success:
+                # Process the frame and set a confidence threshold of 50%
+                results = model(frame, conf=0.5)
 
-            # Break the loop if 'q' is pressed
-            # if (cv2.waitKey(1) & 0xFF == ord("q")) | is_vehicle_powering_off(
-            #     obd_connection
-            # ):
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                # Log any remaining durations
-                # The log file will start with a Session Start Time header
-                # And end with a Session End Time, follow by the Total Driving Duration
-                with open(log_file, "a") as f:
-                    f.write(f"Session Start Time: {start_time}\n\n")
-                    for class_name, duration in durations.items():
-                        if duration >= 1:
-                            f.write(f"{class_name}: {duration:.2f} seconds\n")
-                    end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    total_duration = datetime.strptime(
-                        end_time, "%Y-%m-%d %H:%M:%S"
-                    ) - datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
-                    f.write(f"\n\nSession End Time: {end_time}\n")
-                    f.write(f"Total Driving Duration: {total_duration}")
+                # Display vehicle speed on frame
+                if vehicle_speed is not None:
+                    speed_text = f"Speed: {vehicle_speed} km/h"
+                    # Draw black background rectangle
+                    cv2.rectangle(frame, (0, 0), (100, 50), (0, 0, 0), -1)
+                    # Add speed text
+                    cv2.putText(
+                        frame,
+                        speed_text,
+                        (5, 30),
+                        cv2.FONT_HERSHEY_COMPLEX_SMALL,
+                        1,
+                        (255, 255, 255),
+                        2,
+                    )
+                annotated_frame = process_frame(results)
+
+                # Display the annotated frame
+                cv2.imshow("Driver Attention Monitoring", annotated_frame)
+
+                # Break the loop if 'q' is pressed
+                if (cv2.waitKey(1) & 0xFF == ord("q")) | is_vehicle_powering_off(
+                    obd_connection
+                ):
+                    """if cv2.waitKey(1) & 0xFF == ord("q"):
+                    Log any remaining durations
+                    The log file will start with a Session Start Time header
+                    And end with a Session End Time, follow by the Total Driving Duration
+                    """
+                    with open(log_file, "a") as f:
+                        f.write(f"Session Start Time: {start_time}\n\n")
+                        for class_name, duration in durations.items():
+                            if duration >= 1:
+                                f.write(f"{class_name}: {duration:.2f} seconds\n")
+                        end_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        total_duration = datetime.strptime(
+                            end_time, "%Y-%m-%d %H:%M:%S"
+                        ) - datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+                        f.write(f"\n\nSession End Time: {end_time}\n")
+                        f.write(f"Total Driving Duration: {total_duration}")
+                    break
+            else:
+                # Break the loop if the end of the video is reached
                 break
-        else:
-            # Break the loop if the end of the video is reached
-            break
 
     # Release the video capture object and close the display window
     cap.release()
