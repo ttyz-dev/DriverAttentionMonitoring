@@ -137,10 +137,6 @@ def main():
     # setup OBD-II connection
     obd_connection = obd.OBD()
 
-    # video_path = "./resource/video_dataset/gA_1_s1_ir_face.mp4"
-    # Video capture setup
-    # cap = cv2.VideoCapture(video_path)
-
     cap = cv2.VideoCapture(0)
 
     while cap.isOpened():
@@ -159,15 +155,15 @@ def main():
                 if vehicle_speed is not None:
                     speed_text = f"Speed: {vehicle_speed} km/h"
                     # Draw black background rectangle
-                    cv2.rectangle(frame, (0, 0), (100, 50), (0, 0, 0), -1)
+                    cv2.rectangle(frame, (0, 0), (200, 80), (0, 0, 0), -1)
                     # Add speed text
                     cv2.putText(
                         frame,
                         speed_text,
                         (5, 30),
                         cv2.FONT_HERSHEY_COMPLEX_SMALL,
-                        1,
-                        (255, 255, 255),
+                        0.8,
+                        (0, 0, 255),
                         2,
                     )
                 annotated_frame = process_frame(results)
@@ -179,7 +175,7 @@ def main():
                 if (cv2.waitKey(1) & 0xFF == ord("q")) | is_vehicle_powering_off(
                     obd_connection
                 ):
-                    """if cv2.waitKey(1) & 0xFF == ord("q"):
+                    """
                     Log any remaining durations
                     The log file will start with a Session Start Time header
                     And end with a Session End Time, follow by the Total Driving Duration
